@@ -2,7 +2,7 @@
   "compileOnSave": false,
   "compilerOptions": {
     "baseUrl": "./",
-    "outDir": "./dist/out-tsc",
+    "outDir": "N:/workspaces/github-desktop/nataliazhestkova.github.io/dist",
     "sourceMap": true,
     "declaration": false,
     "downlevelIteration": true,
