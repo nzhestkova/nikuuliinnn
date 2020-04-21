@@ -1,7 +1,7 @@
 import { Component, OnInit } from "@angular/core";
 import * as dat from "dat.gui";
 import {
-  AxesHelper, BoxGeometry, CircleGeometry, Color, Fog, Mesh, MeshPhongMaterial, MeshStandardMaterial,
+  AxesHelper, BoxGeometry, CircleGeometry, Color, CylinderGeometry, Fog, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial,
   PerspectiveCamera, PointLight, Scene, SphereGeometry, Vector3, WebGLRenderer,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
@@ -76,6 +76,7 @@ export class AppComponent implements OnInit {
 
   orbitControlsInit(): void {
     this.orbitControls.target = new Vector3(100, 0, 0);
+    this.orbitControls.maxPolarAngle = Math.PI / 2;
     this.orbitControls.update();
   }
 
@@ -123,6 +124,16 @@ export class AppComponent implements OnInit {
       ball.animate();
     });
 
+    this.scene.getObjectByName(`startPoint`).rotation.z = -this.controls.horizontalAngle * Math.PI / 180;
+    this.scene.getObjectByName(`vertLine`).rotation.z = (90 + this.controls.startAngle) * Math.PI / 180;
+    if (this.controls.startAngle === 0) {
+      this.scene.getObjectByName(`vertLine`).rotation.z = (90 + this.controls.startAngle) * Math.PI / 180 + Math.PI / 720;
+    }
+    if (this.controls.startAngle === 180) {
+      this.scene.getObjectByName(`vertLine`).rotation.z = (90 + this.controls.startAngle) * Math.PI / 180 - Math.PI / 720;
+    }
+    this.scene.getObjectByName(`horizLine`).rotation.y = this.controls.startAngle >= 90 ? Math.PI / 180 : -Math.PI / 720;
+
     requestAnimationFrame(this.animate.bind(this));
     this.renderer.render(this.scene, this.camera);
   }
@@ -163,6 +174,7 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    console.log(`may be?`);
     this.init();
     this.groundInit();
     this.lightInit();
@@ -174,25 +186,40 @@ export class AppComponent implements OnInit {
 
     this.controls = {
       startPosition: new Vector3(0, this.ballRadius, 0),
-      startAngle: 50,
-      horizontalAngle: 5,
+      startAngle: 45,
+      horizontalAngle: 30,
       startSpeed: 30,
       speedRecoveryCoefficient: 1,
-      airResistance: 0.6,
+      airResistance: 0.1,
       timeline: 0,
       wallDepth: 40,
       wallLength: 25,
       wallFar: 150,
-      ballGeneratingSpeed: 10 * 1000,
+      ballGeneratingSpeed: 7 * 1000,
     };
 
     const startGeometry = new CircleGeometry(this.ballRadius + 5, 50);
     const startMaterial = new MeshStandardMaterial({ color: 0x2C2316 });
     const startPoint = new Mesh(startGeometry, startMaterial);
+    startPoint.name = `startPoint`;
     startPoint.receiveShadow = true;
     startPoint.rotateX(-Math.PI / 2);
     startPoint.position.y = -4.9;
     this.scene.add(startPoint);
+
+    const horizLineGeometry = new CylinderGeometry(0.2, 0.2, 300);
+    const horizLineMaterial = new MeshBasicMaterial({ color: 0x000000 });
+    const horizLine = new Mesh(horizLineGeometry, horizLineMaterial);
+    horizLine.name = `horizLine`;
+    horizLine.rotation.z = Math.PI / 2;
+    startPoint.add(horizLine);
+
+    const vertLineGeometry = new CylinderGeometry(0.2, 0.2, 150);
+    const vertLineMaterial = new MeshBasicMaterial({ color: 0xFFFFFF });
+    const vertLine = new Mesh(vertLineGeometry, vertLineMaterial);
+    vertLine.name = `vertLine`;
+    vertLine.rotation.x = Math.PI / 2;
+    startPoint.add(vertLine);
 
     const wallGeometry = new BoxGeometry(this.controls.wallLength * 2, 4, this.controls.wallDepth * 2, 50);
     const wallMaterial = new MeshStandardMaterial({color: this.colors[this.randomInteger(0, 5)]});
@@ -206,25 +233,16 @@ export class AppComponent implements OnInit {
     this.scene.add(wall);
 
     const gui = new dat.GUI();
+    gui.width = 350;
     gui.add(this.controls, "startAngle", 0, 180).name("угол наклона");
     gui.add(this.controls, "startSpeed", 0, 100).name("начальная скорость");
-    gui.add(this.controls, "speedRecoveryCoefficient", 0, 1).name("коэффициент восстановления");
+    gui.add(this.controls, "speedRecoveryCoefficient", 0, 1).name("восстановление скорости");
     gui.add(this.controls, "airResistance", 0, 2).name("сопротивление воздуха");
     gui.add(this.controls, "horizontalAngle", -90, 90).name("угол поворота");
     gui.add(this.controls, "wallFar", 30, 200).name("близость стены");
     this.start();
 
     setInterval(this.start.bind(this), this.controls.ballGeneratingSpeed);
-    // setInterval(() => {
-    //   wall.position.x = this.controls.wallFar;
-    //   this.balls.forEach((ball) => {
-    //     ball.collision(new Vector3(wall.position.x - 2, wall.position.y - this.controls.wallLength, wall.position.z - this.controls.wallDepth),
-    //       new Vector3(wall.position.x + 2, wall.position.y + this.controls.wallLength, wall.position.z + this.controls.wallDepth));
-    //     ball.animate();
-    //   });
-    // }, 10);
-
-
 
     this.renderer.render(this.scene, this.camera);
     this.animate();
