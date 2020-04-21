@@ -41,6 +41,7 @@ export class AppComponent implements OnInit {
     startSpeed: number;
     startPosition: Vector3;
     speedRecoveryCoefficient: number;
+    airResistance: number;
     timeline: number;
     wallDepth: number;
     wallLength: number;
@@ -66,8 +67,8 @@ export class AppComponent implements OnInit {
   }
 
   lightInit(): void {
-    this.light = new PointLight(0xADA9A1, 2, Infinity);
-    this.light.position.set(50, 100, 50);
+    this.light = new PointLight(0xADA9A1, 1.7, Infinity);
+    this.light.position.set(0, 200, 0);
     this.light.receiveShadow = true;
     this.light.castShadow = true;
     this.scene.add(this.light);
@@ -91,7 +92,7 @@ export class AppComponent implements OnInit {
 
   init(): void {
     this.scene = new Scene();
-    this.scene.fog = new Fog(0xCBCBCB, 170, 700);
+    this.scene.fog = new Fog(0xCBCBCB, 200, 700);
     this.scene.background = new Color(0xCBCBCB);
     this.camera = new PerspectiveCamera(45,
       window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -114,15 +115,14 @@ export class AppComponent implements OnInit {
       this.camera.aspect = canvas.clientWidth / canvas.clientHeight;
       this.camera.updateProjectionMatrix();
     }
-
     const wall = this.scene.getObjectByName(`wall`);
-    wall.position.x = this.controls.wallFar;
+    // wall.position.x = this.controls.wallFar;
+    // this.balls.forEach((ball) => {
+    //   ball.collision(new Vector3(wall.position.x - 2, wall.position.y - this.controls.wallLength, wall.position.z - this.controls.wallDepth),
+    //     new Vector3(wall.position.x + 2, wall.position.y + this.controls.wallLength, wall.position.z + this.controls.wallDepth));
+    //   ball.animate();
+    // });
 
-    this.balls.forEach((ball) => {
-      ball.collision(new Vector3(wall.position.x - 2, wall.position.y - this.controls.wallLength, wall.position.z - this.controls.wallDepth),
-        new Vector3(wall.position.x + 2, wall.position.y + this.controls.wallLength, wall.position.z + this.controls.wallDepth));
-      ball.animate();
-    });
     requestAnimationFrame(this.animate.bind(this));
     this.renderer.render(this.scene, this.camera);
   }
@@ -137,7 +137,6 @@ export class AppComponent implements OnInit {
              horizontalAngle: number,
              startPosition: Vector3,
              speedRecoveryCoefficient: number): void {
-    speedRecoveryCoefficient = speedRecoveryCoefficient >= 0.95 && speedRecoveryCoefficient <= 1 ? 0.9 : speedRecoveryCoefficient;
     const sphereGeometry = new SphereGeometry(this.ballRadius, 50, 50);
     const sphereMaterial = new MeshStandardMaterial({color: this.colors[this.randomInteger(0, 5)]});
     const sphere = new Mesh(sphereGeometry, sphereMaterial);
@@ -146,7 +145,7 @@ export class AppComponent implements OnInit {
     sphere.castShadow = true;
     const ball = new Ball(this.ballsIDCounter, this.ballRadius,
       startSpeed, startAngle, startPosition, speedRecoveryCoefficient,
-      sphere, this.scene, horizontalAngle);
+      this.controls.airResistance, sphere, this.scene, horizontalAngle);
     this.scene.add(sphere);
     this.balls.push(ball);
     setTimeout(() => {
@@ -159,7 +158,7 @@ export class AppComponent implements OnInit {
     this.createBall(this.controls.startSpeed,
       this.controls.startAngle,
       this.controls.horizontalAngle,
-      new Vector3(0, 10, 0),
+      new Vector3(0, 0, 0),
       this.controls.speedRecoveryCoefficient);
   }
 
@@ -175,20 +174,22 @@ export class AppComponent implements OnInit {
 
     this.controls = {
       startPosition: new Vector3(0, this.ballRadius, 0),
-      startAngle: 45,
+      startAngle: 50,
       horizontalAngle: 0,
-      startSpeed: 40,
-      speedRecoveryCoefficient: 0.8,
+      startSpeed: 30,
+      speedRecoveryCoefficient: 1,
+      airResistance: 0,
       timeline: 0,
       wallDepth: 40,
       wallLength: 25,
       wallFar: 150,
-      ballGeneratingSpeed: 5 * 1000,
+      ballGeneratingSpeed: 20 * 1000,
     };
 
     const startGeometry = new CircleGeometry(this.ballRadius + 5, 50);
     const startMaterial = new MeshStandardMaterial({ color: 0x2C2316 });
     const startPoint = new Mesh(startGeometry, startMaterial);
+    startPoint.receiveShadow = true;
     startPoint.rotateX(-Math.PI / 2);
     startPoint.position.y = -4.9;
     this.scene.add(startPoint);
@@ -197,6 +198,7 @@ export class AppComponent implements OnInit {
     const wallMaterial = new MeshStandardMaterial({color: this.colors[this.randomInteger(0, 5)]});
     const wall = new Mesh(wallGeometry, wallMaterial);
     wall.castShadow = true;
+    wall.receiveShadow = true;
     wall.position.x = this.controls.wallFar;
     wall.position.y = this.controls.wallLength - 5;
     wall.rotateZ(Math.PI / 2);
@@ -205,12 +207,24 @@ export class AppComponent implements OnInit {
 
     const gui = new dat.GUI();
     gui.add(this.controls, "startAngle", 0, 180).name("угол наклона");
-    gui.add(this.controls, "startSpeed", 0, 100).name("скорость мяча");
-    gui.add(this.controls, "speedRecoveryCoefficient", 0, 1).name("упругость мяча");
+    gui.add(this.controls, "startSpeed", 0, 100).name("начальная скорость");
+    gui.add(this.controls, "speedRecoveryCoefficient", 0, 1).name("коэффициент восстановления");
+    gui.add(this.controls, "airResistance", 0, 1).name("сопротивление воздуха");
     gui.add(this.controls, "horizontalAngle", -90, 90).name("угол поворота");
     gui.add(this.controls, "wallFar", 30, 200).name("близость стены");
     this.start();
+
     setInterval(this.start.bind(this), this.controls.ballGeneratingSpeed);
+    setInterval(() => {
+      wall.position.x = this.controls.wallFar;
+      this.balls.forEach((ball) => {
+        ball.collision(new Vector3(wall.position.x - 2, wall.position.y - this.controls.wallLength, wall.position.z - this.controls.wallDepth),
+          new Vector3(wall.position.x + 2, wall.position.y + this.controls.wallLength, wall.position.z + this.controls.wallDepth));
+        ball.animate();
+      });
+    }, 100);
+
+
 
     this.renderer.render(this.scene, this.camera);
     this.animate();
