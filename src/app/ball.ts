@@ -3,7 +3,7 @@ import { Object3D, Scene, Vector3 } from "three";
 export class Ball {
   degToRad = Math.PI / 180;
   step = 0.1;
-  weight = 100;
+  weight = 10;
   id: number;
   radius: number;
   startSpeed: number;
@@ -104,13 +104,14 @@ export class Ball {
   }
 
   newPosition(): Vector3 {
+    const angle = -((Math.sign(this.startAngle) * 180) - this.startAngle);
     return new Vector3(
       this.object3D.position.x + this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.cos(this.horizontalAngle * this.degToRad) * this.step
-      - (this.airResistance / this.weight * Math.pow(this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.cos(this.horizontalAngle * this.degToRad), 2)) * Math.pow(this.step, 2) / 2,
+      - (this.airResistance / this.weight * this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.cos(this.horizontalAngle * this.degToRad) / 2) * Math.pow(this.step, 2),
       this.object3D.position.y + this.startSpeed * Math.sin(this.startAngle * this.degToRad) * this.step
-      - (9.81 + this.airResistance / this.weight * Math.pow(this.startSpeed * Math.sin(this.startAngle * this.degToRad), 2)) * Math.pow(this.step, 2) / 2,
+      - (9.81 + this.airResistance / this.weight * this.startSpeed * Math.sin(this.startAngle * this.degToRad) / 2) * Math.pow(this.step, 2),
       this.object3D.position.z + this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.sin(this.horizontalAngle * this.degToRad) * this.step
-      - this.airResistance / this.weight * Math.pow(this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.sin(this.horizontalAngle * this.degToRad), 2) * Math.pow(this.step, 2) / 2,
+      - (this.airResistance / this.weight * this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.sin(this.horizontalAngle * this.degToRad) / 2) * Math.pow(this.step, 2),
     );
     // return new Vector3(
     //   this.object3D.position.x + this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.cos(this.horizontalAngle * this.degToRad) * this.step,
@@ -126,17 +127,19 @@ export class Ball {
   }
 
   newSpeed(): number {
+    const angle = -((Math.sign(this.startAngle) * 180) - this.startAngle);
     const newVx = this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.cos(this.horizontalAngle * this.degToRad)
-      - this.airResistance / this.weight * Math.pow(this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.cos(this.horizontalAngle * this.degToRad), 2)
+      - this.airResistance / this.weight * this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.cos(this.horizontalAngle * this.degToRad)
       * this.step;
 
     const newVy = this.startSpeed * Math.sin(this.startAngle * this.degToRad)
-      - (9.81 + this.airResistance / this.weight * Math.pow(this.startSpeed * Math.sin(this.startAngle * this.degToRad), 2) * this.step);
+      - (9.81 + this.airResistance / this.weight * this.startSpeed * Math.sin(this.startAngle * this.degToRad)) * this.step;
 
     const newVz = this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.sin(this.horizontalAngle * this.degToRad)
-      - this.airResistance / this.weight * Math.pow(this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.sin(this.horizontalAngle * this.degToRad), 2)
+      - this.airResistance / this.weight * this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.sin(this.horizontalAngle * this.degToRad)
       * this.step;
 
+    // console.log(newVx, newVy, newVz);
     return Math.sqrt(Math.pow(newVx, 2) + Math.pow(newVy, 2) + Math.pow(newVz, 2));
     // const newVx = this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.cos(this.horizontalAngle * this.degToRad);
     // const newVy = this.startSpeed * Math.sin(this.startAngle * this.degToRad) - 9.81  * this.step;
@@ -154,8 +157,10 @@ export class Ball {
     //   - (9.81 + this.airResistance / this.weight * Math.pow(this.startSpeed * Math.sin(this.startAngle * this.degToRad), 2)) * Math.pow(this.timeline, 2) / 2;
     // this.object3D.position.z = this.startPosition.z + this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.sin(this.horizontalAngle * this.degToRad) * this.timeline
     //   - this.airResistance / this.weight * Math.pow(this.startSpeed * Math.cos(this.startAngle * this.degToRad) * Math.sin(this.horizontalAngle * this.degToRad), 2) * Math.pow(this.timeline, 2) / 2;
+    // console.log(this.startSpeed);
     const newPos = this.newPosition();
     this.startAngle = this.newAngle(newPos) / this.degToRad;
+    console.log(this.startAngle);
     this.startSpeed = this.newSpeed();
 
     this.object3D.position.set(newPos.x, newPos.y, newPos.z);

@@ -116,12 +116,12 @@ export class AppComponent implements OnInit {
       this.camera.updateProjectionMatrix();
     }
     const wall = this.scene.getObjectByName(`wall`);
-    // wall.position.x = this.controls.wallFar;
-    // this.balls.forEach((ball) => {
-    //   ball.collision(new Vector3(wall.position.x - 2, wall.position.y - this.controls.wallLength, wall.position.z - this.controls.wallDepth),
-    //     new Vector3(wall.position.x + 2, wall.position.y + this.controls.wallLength, wall.position.z + this.controls.wallDepth));
-    //   ball.animate();
-    // });
+    wall.position.x = this.controls.wallFar;
+    this.balls.forEach((ball) => {
+      ball.collision(new Vector3(wall.position.x - 2, wall.position.y - this.controls.wallLength, wall.position.z - this.controls.wallDepth),
+        new Vector3(wall.position.x + 2, wall.position.y + this.controls.wallLength, wall.position.z + this.controls.wallDepth));
+      ball.animate();
+    });
 
     requestAnimationFrame(this.animate.bind(this));
     this.renderer.render(this.scene, this.camera);
@@ -175,15 +175,15 @@ export class AppComponent implements OnInit {
     this.controls = {
       startPosition: new Vector3(0, this.ballRadius, 0),
       startAngle: 50,
-      horizontalAngle: 0,
+      horizontalAngle: 5,
       startSpeed: 30,
       speedRecoveryCoefficient: 1,
-      airResistance: 0,
+      airResistance: 0.6,
       timeline: 0,
       wallDepth: 40,
       wallLength: 25,
       wallFar: 150,
-      ballGeneratingSpeed: 20 * 1000,
+      ballGeneratingSpeed: 10 * 1000,
     };
 
     const startGeometry = new CircleGeometry(this.ballRadius + 5, 50);
@@ -209,20 +209,20 @@ export class AppComponent implements OnInit {
     gui.add(this.controls, "startAngle", 0, 180).name("угол наклона");
     gui.add(this.controls, "startSpeed", 0, 100).name("начальная скорость");
     gui.add(this.controls, "speedRecoveryCoefficient", 0, 1).name("коэффициент восстановления");
-    gui.add(this.controls, "airResistance", 0, 1).name("сопротивление воздуха");
+    gui.add(this.controls, "airResistance", 0, 2).name("сопротивление воздуха");
     gui.add(this.controls, "horizontalAngle", -90, 90).name("угол поворота");
     gui.add(this.controls, "wallFar", 30, 200).name("близость стены");
     this.start();
 
     setInterval(this.start.bind(this), this.controls.ballGeneratingSpeed);
-    setInterval(() => {
-      wall.position.x = this.controls.wallFar;
-      this.balls.forEach((ball) => {
-        ball.collision(new Vector3(wall.position.x - 2, wall.position.y - this.controls.wallLength, wall.position.z - this.controls.wallDepth),
-          new Vector3(wall.position.x + 2, wall.position.y + this.controls.wallLength, wall.position.z + this.controls.wallDepth));
-        ball.animate();
-      });
-    }, 100);
+    // setInterval(() => {
+    //   wall.position.x = this.controls.wallFar;
+    //   this.balls.forEach((ball) => {
+    //     ball.collision(new Vector3(wall.position.x - 2, wall.position.y - this.controls.wallLength, wall.position.z - this.controls.wallDepth),
+    //       new Vector3(wall.position.x + 2, wall.position.y + this.controls.wallLength, wall.position.z + this.controls.wallDepth));
+    //     ball.animate();
+    //   });
+    // }, 10);
 
 
 
